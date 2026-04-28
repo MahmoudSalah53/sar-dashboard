@@ -10,72 +10,122 @@ import { Link } from 'react-router-dom'
 
 import {
   formatBookingValue,
-  formatLabel,
   getBookingId,
-  getDynamicColumnKeys,
   getFieldValue,
 } from '../../lib/booking-fields'
-import type { BookingRecord } from '../../types/bookings'
+import type { BookingRecord, BookingValue } from '../../types/bookings'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table'
 
-type BookingsTableProps = {
-  bookings: BookingRecord[]
+type BookingsTableProps = { bookings: BookingRecord[] }
+
+function getChannelLabel(value: BookingValue) {
+  const raw = String(value ?? '').toLowerCase()
+  if (raw.includes('whatsapp')) return 'WhatsApp'
+  if (raw.includes('web')) return 'Website'
+  return 'Other'
 }
 
-function isSourceKey(key: string) {
-  return /source|channel|origin|platform/i.test(key)
-}
-
-function getSourceTone(value: string) {
-  const lowered = value.toLowerCase()
-  if (lowered.includes('whatsapp')) return 'success' as const
-  if (lowered.includes('web')) return 'default' as const
-  if (lowered.includes('phone') || lowered.includes('call')) return 'warning' as const
+function getChannelTone(label: string) {
+  if (label === 'WhatsApp') return 'success' as const
+  if (label === 'Website') return 'default' as const
   return 'neutral' as const
 }
 
+function formatRoute(from: BookingValue, to: BookingValue) {
+  const fromValue = formatBookingValue(from)
+  const toValue = formatBookingValue(to)
+  return `${fromValue} -> ${toValue}`
+}
+
+function formatTimeRange(dep: BookingValue, arr: BookingValue) {
+  const depValue = typeof dep === 'string' && dep.trim() ? dep : formatBookingValue(dep)
+  const arrValue = typeof arr === 'string' && arr.trim() ? arr : formatBookingValue(arr)
+  return `${depValue} - ${arrValue}`
+}
+
+function formatSarPrice(value: BookingValue) {
+  if (typeof value === 'number') return `${new Intl.NumberFormat().format(value)} SAR`
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value.replace(/[^0-9.-]/g, ''))
+    if (Number.isFinite(parsed)) return `${new Intl.NumberFormat().format(parsed)} SAR`
+  }
+  return formatBookingValue(value)
+}
+
 export function BookingsTable({ bookings }: BookingsTableProps) {
-  const canonicalKeys = new Set(['name', 'service', 'source', 'date', 'status', 'price'])
-
-  const canonicalColumns: ColumnDef<BookingRecord>[] = Array.from(canonicalKeys).map((key) => ({
-    id: key,
-    header: formatLabel(key),
-    cell: ({ row }: CellContext<BookingRecord, unknown>) => {
-      const raw = getFieldValue(row.original, key)
-      const formatted = formatBookingValue(raw)
-
-      if (isSourceKey(key) && typeof raw === 'string' && raw.trim()) {
-        return <Badge tone={getSourceTone(raw)}>{formatted}</Badge>
-      }
-
-      return (
-        <span className="line-clamp-1 text-[var(--color-text-primary)]">{formatted}</span>
-      )
-    },
-  }))
-
-  const extraColumns: ColumnDef<BookingRecord>[] = getDynamicColumnKeys(bookings)
-    .filter((key) => !canonicalKeys.has(key))
-    .map((key) => ({
-      accessorKey: key,
-      header: formatLabel(key),
+  const columns: ColumnDef<BookingRecord>[] = [
+    {
+      id: 'index',
+      header: '#',
       cell: ({ row }: CellContext<BookingRecord, unknown>) => (
-        <span className="line-clamp-1 text-[var(--color-text-primary)]">
-          {formatBookingValue(row.original[key])}
+        <span className="block text-center font-medium text-[var(--color-text-secondary)]">
+          {row.index + 1}
         </span>
       ),
-    }))
-
-  const columns: ColumnDef<BookingRecord>[] = [
-    ...canonicalColumns,
-    ...extraColumns,
+    },
+    {
+      id: 'name',
+      header: 'Name',
+      cell: ({ row }: CellContext<BookingRecord, unknown>) => (
+        <span className="block line-clamp-1 text-center font-medium text-[var(--color-text-primary)]">
+          {formatBookingValue(getFieldValue(row.original, 'name'))}
+        </span>
+      ),
+    },
+    {
+      id: 'date',
+      header: 'Route',
+      cell: ({ row }: CellContext<BookingRecord, unknown>) => {
+        const from = getFieldValue(row.original, 'from')
+        const to = getFieldValue(row.original, 'to')
+        return (
+          <span className="block line-clamp-1 text-center text-[var(--color-text-primary)]">
+            {formatRoute(from, to)}
+          </span>
+        )
+      },
+    },
+    {
+      id: 'time',
+      header: 'Time (24h)',
+      cell: ({ row }: CellContext<BookingRecord, unknown>) => {
+        const dep = getFieldValue(row.original, 'dep')
+        const arr = getFieldValue(row.original, 'arr')
+        return (
+        <span className="block line-clamp-1 text-center text-[var(--color-text-primary)]">
+            {formatTimeRange(dep, arr)}
+        </span>
+        )
+      },
+    },
+    {
+      id: 'channel',
+      header: 'Channel',
+      cell: ({ row }: CellContext<BookingRecord, unknown>) => {
+        const label = getChannelLabel(getFieldValue(row.original, 'source'))
+        return (
+          <span className="flex justify-center">
+            <Badge tone={getChannelTone(label)}>{label}</Badge>
+          </span>
+        )
+      },
+    },
+    {
+      id: 'price',
+      header: 'Price',
+      cell: ({ row }: CellContext<BookingRecord, unknown>) => (
+        <span className="block line-clamp-1 text-center text-[var(--color-text-primary)]">
+          {formatSarPrice(getFieldValue(row.original, 'price'))}
+        </span>
+      ),
+    },
     {
       id: 'actions',
       header: '',
       cell: ({ row }) => (
-        <div className="flex justify-end">
+        <div className="flex justify-center">
           <Button asChild size="sm" variant="ghost" className="text-xs">
             <Link to={`/bookings/${getBookingId(row.original)}`}>
               View
@@ -101,7 +151,7 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="hover:bg-transparent">
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
+                <TableHead key={header.id} className="text-center">
                   {header.isPlaceholder
                     ? null
                     : flexRender(header.column.columnDef.header, header.getContext())}
@@ -114,7 +164,7 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
           {table.getRowModel().rows.map((row) => (
             <TableRow key={row.id}>
               {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
+                <TableCell key={cell.id} className="text-center">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
               ))}

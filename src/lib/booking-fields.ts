@@ -5,6 +5,12 @@ const commonFieldCandidates: Record<string, string[]> = {
   service: ['service', 'serviceName', 'bookingService', 'type'],
   source: ['source', 'channel', 'origin', 'platform'],
   date: ['date', 'bookingDate', 'scheduledAt', 'createdAt', 'startTime'],
+  from: ['from', 'originCity', 'departureCity'],
+  to: ['to', 'destinationCity', 'arrivalCity'],
+  dep: ['dep', 'departure', 'departureTime'],
+  arr: ['arr', 'arrival', 'arrivalTime'],
+  destination: ['destination', 'destnation', 'dest', 'to', 'city', 'location', 'service'],
+  price: ['price', 'total_price', 'amount', 'total', 'fare', 'cost'],
 }
 
 const preferredTableFields = ['name', 'service', 'source', 'date']

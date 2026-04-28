@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SAR &amp; WhatsApp Monitor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "inverse-surface": "#2d3133",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-surface": "#191c1e",
+                        "outline-variant": "#c7c4d8",
+                        "on-secondary-fixed": "#0b1c30",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#d0e1fb",
+                        "surface": "#f7f9fb",
+                        "on-surface-variant": "#464555",
+                        "background": "#f7f9fb",
+                        "on-error-container": "#93000a",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-bright": "#f7f9fb",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#c3c0ff",
+                        "on-tertiary-container": "#63f889",
+                        "primary-container": "#4f46e5",
+                        "on-primary-fixed": "#0f0069",
+                        "tertiary-fixed-dim": "#4ae176",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "surface-container-high": "#e6e8ea",
+                        "tertiary-container": "#007030",
+                        "on-primary": "#ffffff",
+                        "surface-container-low": "#f2f4f6",
+                        "tertiary-fixed": "#6bff8f",
+                        "surface-tint": "#4d44e3",
+                        "tertiary": "#005523",
+                        "primary": "#3525cd",
+                        "on-tertiary-fixed-variant": "#005321",
+                        "surface-container": "#eceef0",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "on-tertiary-fixed": "#002109",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#e2dfff",
+                        "surface-variant": "#e0e3e5",
+                        "error": "#ba1a1a",
+                        "on-secondary-container": "#54647a",
+                        "secondary": "#505f76",
+                        "on-background": "#191c1e",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#dad7ff",
+                        "secondary-fixed": "#d3e4fe",
+                        "outline": "#777587",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#d8dadc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "container-padding": "32px",
+                        "base": "4px",
+                        "sm": "8px",
+                        "xl": "32px",
+                        "gutter": "20px",
+                        "xs": "4px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "data-tabular": ["Inter"],
+                        "display": ["Manrope"],
+                        "h2": ["Manrope"],
+                        "body-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "h1": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "data-tabular": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                        "display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "h1": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .standard-card-shadow {
+            box-shadow: 0px 4px 20px rgba(15, 23, 42, 0.05);
+        }
+        .message-unread {
+            background-color: rgba(79, 70, 229, 0.04);
+            border-left: 3px solid #4f46e5;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md">
+<!-- Sidebar (Shell) -->
+<aside class="fixed left-0 top-0 h-full w-[260px] bg-slate-50 border-r border-slate-200 flex flex-col z-40">
+<div class="px-6 py-8">
+<h2 class="text-lg font-black text-slate-900 font-display">System Core</h2>
+<p class="text-[11px] text-slate-500 font-medium uppercase tracking-wider">V2.4.0 Active</p>
+</div>
+<nav class="flex-1 px-3 space-y-1">
+<a class="flex items-center text-indigo-700 font-semibold border-l-4 border-indigo-600 bg-indigo-50/50 py-3 px-4 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="dashboard">dashboard</span>
+<span class="font-manrope text-[13px]">Dashboard</span>
+</a>
+<a class="flex items-center text-slate-600 py-3 px-4 hover:bg-slate-100 hover:text-slate-900 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="security">security</span>
+<span class="font-manrope text-[13px]">SAR Logs</span>
+</a>
+<a class="flex items-center text-slate-600 py-3 px-4 hover:bg-slate-100 hover:text-slate-900 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="chat">chat</span>
+<span class="font-manrope text-[13px]">WhatsApp Data</span>
+</a>
+<a class="flex items-center text-slate-600 py-3 px-4 hover:bg-slate-100 hover:text-slate-900 transition-all duration-200" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="monitoring">monitoring</span>
+<span class="font-manrope text-[13px]">Analytics</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-200 space-y-4">
+<button class="w-full bg-error text-white py-2.5 rounded-lg font-bold text-[13px] flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm" data-icon="emergency">emergency</span>
+                Emergency Alert
+            </button>
+<div class="space-y-1">
+<a class="flex items-center text-slate-600 py-2 px-4 hover:bg-slate-100 rounded-lg text-[13px]" href="#">
+<span class="material-symbols-outlined mr-3 text-lg" data-icon="contact_support">contact_support</span>
+                    Support
+                </a>
+<a class="flex items-center text-slate-600 py-2 px-4 hover:bg-slate-100 rounded-lg text-[13px]" href="#">
+<span class="material-symbols-outlined mr-3 text-lg" data-icon="person">person</span>
+                    Account
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-[260px] min-h-screen">
+<!-- Header (Shell) -->
+<header class="flex justify-between items-center px-6 py-3 w-full sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
+<div class="flex items-center gap-6">
+<h1 class="text-xl font-bold text-slate-900 font-display">SAR &amp; WhatsApp Monitor</h1>
+<div class="flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full">
+<span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+<span class="text-[12px] font-semibold text-green-700">Syncing</span>
+</div>
+</div>
+<div class="flex items-center gap-4 flex-1 max-w-xl mx-8">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="Search across all message sources..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex gap-1">
+<button class="p-2 text-slate-500 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+<div class="h-8 w-[1px] bg-slate-200 mx-1"></div>
+<div class="flex items-center gap-3 pl-2">
+<div class="text-right">
+<p class="text-sm font-bold text-slate-900">Alex Rivers</p>
+<p class="text-[11px] text-slate-500">Security Lead</p>
+</div>
+<img alt="User profile" class="w-10 h-10 rounded-full border-2 border-white shadow-sm" data-alt="professional headshot of a middle-aged security manager with short hair and a confident expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFaJ1QSgnWd1aOkexKS5U-eH22vrrqR2BoWwBqekU_beCyc5VttxSwlG-I_qhxG9Kvcbf7aVIIFqsHp7O10mq2RwSGdiDW4aTKb6oO2RfDuAdL1gSlf_Kna6pg5y2Uu4EptCO0P60o-ElvkWA_iz2MqkyU7MEYuwlNscqVErUqVDiYv7O_Xt_F6f_hBzDD3zIuUSWCRTRVi7vTLeWzo8JPpPKp4YQl01nfDc1a1iG22MIzldJkiuX6D79RSIvAHJF5RKGZkg-CBQ"/>
+</div>
+</div>
+</header>
+<!-- Page Canvas -->
+<div class="p-container-padding space-y-lg">
+<!-- Summary Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg">
+<!-- Total Messages -->
+<div class="bg-white p-5 rounded-xl border border-slate-200 standard-card-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+<span class="material-symbols-outlined" data-icon="all_inbox">all_inbox</span>
+</div>
+<span class="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">+12%</span>
+</div>
+<p class="text-slate-500 font-label-caps uppercase tracking-wider mb-1">Total Messages</p>
+<h3 class="text-2xl font-bold text-slate-900">42,892</h3>
+</div>
+<!-- SAR Messages -->
+<div class="bg-white p-5 rounded-xl border border-slate-200 standard-card-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-blue-50 rounded-lg text-blue-600">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+</div>
+<span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Primary</span>
+</div>
+<p class="text-slate-500 font-label-caps uppercase tracking-wider mb-1">SAR Activity</p>
+<h3 class="text-2xl font-bold text-slate-900">8,104</h3>
+</div>
+<!-- WhatsApp Messages -->
+<div class="bg-white p-5 rounded-xl border border-slate-200 standard-card-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-green-50 rounded-lg text-green-600">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+</div>
+<span class="text-xs font-bold text-slate-500 bg-slate-50 px-2 py-0.5 rounded-full">Encrypted</span>
+</div>
+<p class="text-slate-500 font-label-caps uppercase tracking-wider mb-1">WhatsApp Data</p>
+<h3 class="text-2xl font-bold text-slate-900">34,788</h3>
+</div>
+<!-- Unread -->
+<div class="bg-white p-5 rounded-xl border border-indigo-200 standard-card-shadow ring-1 ring-indigo-50">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-primary-container rounded-lg text-white">
+<span class="material-symbols-outlined" data-icon="mark_chat_unread">mark_chat_unread</span>
+</div>
+<span class="flex h-2 w-2 rounded-full bg-error animate-ping"></span>
+</div>
+<p class="text-slate-500 font-label-caps uppercase tracking-wider mb-1">Unread Alerts</p>
+<h3 class="text-2xl font-bold text-primary">127</h3>
+</div>
+</div>
+<!-- Main Table Section -->
+<div class="bg-white rounded-xl border border-slate-200 standard-card-shadow overflow-hidden">
+<!-- Table Filters -->
+<div class="px-6 py-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-4">
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-700 text-sm font-semibold rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="filter_list">filter_list</span>
+                            Filters
+                        </button>
+<div class="flex bg-slate-100 p-1 rounded-lg">
+<button class="px-4 py-1.5 text-xs font-bold bg-white text-indigo-600 rounded-md shadow-sm">All</button>
+<button class="px-4 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700">SAR</button>
+<button class="px-4 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700">WhatsApp</button>
+</div>
+</div>
+<div class="text-sm text-slate-500 font-medium">
+                        Showing <span class="text-slate-900">1-10</span> of 1,240 messages
+                    </div>
+</div>
+<!-- Data Table -->
+<div class="overflow-x-auto relative">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50/50 text-slate-500 text-[12px] uppercase tracking-wider font-bold">
+<th class="px-6 py-4">ID</th>
+<th class="px-6 py-4">Source</th>
+<th class="px-6 py-4">Sender</th>
+<th class="px-6 py-4">Message Preview</th>
+<th class="px-6 py-4">Time</th>
+<th class="px-6 py-4">Status</th>
+<th class="px-6 py-4"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<!-- Row 1: Unread SAR -->
+<tr class="message-unread hover:bg-indigo-50/20 cursor-pointer transition-colors group">
+<td class="px-6 py-4 text-xs font-data-tabular text-slate-500">#SAR-8821</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">SAR</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600">MJ</div>
+<span class="text-sm font-bold text-slate-900">Mark Jenkins</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-slate-600 max-w-xs truncate font-medium">Alert: Perimeter breach detected at sector 4G. Immediate verification required...</p>
+</td>
+<td class="px-6 py-4 text-xs font-medium text-slate-500">2 mins ago</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-indigo-100 text-indigo-700">New</span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-indigo-600 transition-all">
+<span class="material-symbols-outlined" data-icon="open_in_new">open_in_new</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: WhatsApp Reviewed -->
+<tr class="hover:bg-slate-50 cursor-pointer transition-colors group">
+<td class="px-6 py-4 text-xs font-data-tabular text-slate-500">#WA-1029</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">WhatsApp</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<img class="w-8 h-8 rounded-full" data-alt="avatar of a person with smiling face" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeqIizymABqB3_WNMAAolOJZtLfM_Yw2T3PU27f-lxVMWhNHkXzUIuUU7sVDVCKbGFeLi2OpRk78A0FlI2ibb65pokyZg4IeX7EfNtHOfPEGxEqJ6l1dBH-D_dnVIGJVqRoVPOyHyjHqHGCyA41C6RkDEIHnipWbL6fgSl-RVRCKIH8OUD5Z7ocrrE21pD3HYw0VupX7j5uCRithbVPFJApG--UldjlTTlfWKplsY8MHvKs_z7SLnSHpzghoB9zKRHm76QR3otDA"/>
+<span class="text-sm font-bold text-slate-900">Sarah Lane</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-slate-500 max-w-xs truncate">Logistics report for the evening shift is attached. All units accounted for.</p>
+</td>
+<td class="px-6 py-4 text-xs font-medium text-slate-500">14 mins ago</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-600">Reviewed</span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-indigo-600 transition-all">
+<span class="material-symbols-outlined" data-icon="open_in_new">open_in_new</span>
+</button>
+</td>
+</tr>
+<!-- Row 3: SAR Flagged -->
+<tr class="hover:bg-slate-50 cursor-pointer transition-colors group">
+<td class="px-6 py-4 text-xs font-data-tabular text-slate-500">#SAR-8819</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">SAR</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600">BT</div>
+<span class="text-sm font-bold text-slate-900">Base Terminal 02</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-slate-500 max-w-xs truncate">Hardware warning: Thermal threshold exceeded on relay station #12.</p>
+</td>
+<td class="px-6 py-4 text-xs font-medium text-slate-500">1 hour ago</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-error-container text-on-error-container">Flagged</span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-indigo-600 transition-all">
+<span class="material-symbols-outlined" data-icon="open_in_new">open_in_new</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: WhatsApp New -->
+<tr class="message-unread hover:bg-indigo-50/20 cursor-pointer transition-colors group">
+<td class="px-6 py-4 text-xs font-data-tabular text-slate-500">#WA-1025</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">WhatsApp</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600">RH</div>
+<span class="text-sm font-bold text-slate-900">Robert Hicks</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<p class="text-sm text-slate-600 max-w-xs truncate font-medium">Just received the cargo manifests. We need to cross-check with the...</p>
+</td>
+<td class="px-6 py-4 text-xs font-medium text-slate-500">2 hours ago</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-indigo-100 text-indigo-700">New</span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="opacity-0 group-hover:opacity-100 p-2 text-slate-400 hover:text-indigo-600 transition-all">
+<span class="material-symbols-outlined" data-icon="open_in_new">open_in_new</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+<button class="px-4 py-2 text-sm font-bold text-slate-600 hover:text-indigo-600 disabled:opacity-50 flex items-center gap-2">
+<span class="material-symbols-outlined text-lg" data-icon="chevron_left">chevron_left</span>
+                        Previous
+                    </button>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded-lg bg-indigo-600 text-white font-bold text-xs">1</button>
+<button class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-600 font-bold text-xs">2</button>
+<button class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-600 font-bold text-xs">3</button>
+<span class="mx-1 text-slate-400">...</span>
+<button class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-600 font-bold text-xs">12</button>
+</div>
+<button class="px-4 py-2 text-sm font-bold text-slate-600 hover:text-indigo-600 flex items-center gap-2">
+                        Next
+                        <span class="material-symbols-outlined text-lg" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Side Panel (Detail View) - Shown state simulated with positioning -->
+<!-- In a real app, this would toggle visibility based on JS. Here it's a fixed element on the side for visual representation -->
+<div class="fixed top-0 right-0 h-full w-[400px] bg-white shadow-2xl z-50 border-l border-slate-200 flex flex-col transform transition-transform duration-300 ease-in-out">
+<div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+<h3 class="text-sm font-black text-slate-900 uppercase tracking-widest">Message Details</h3>
+<button class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<!-- Header Info -->
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+<span class="material-symbols-outlined text-3xl" data-icon="account_circle" data-weight="fill">account_circle</span>
+</div>
+<div>
+<h4 class="text-lg font-bold text-slate-900">Mark Jenkins</h4>
+<p class="text-sm text-slate-500 font-medium">+1 (555) 012-9921 • Field Op</p>
+</div>
+</div>
+<!-- Meta Stats -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+<p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Source</p>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-600 text-lg" data-icon="security">security</span>
+<span class="text-sm font-bold text-slate-700">SAR Log</span>
+</div>
+</div>
+<div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+<p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Timestamp</p>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-lg" data-icon="schedule">schedule</span>
+<span class="text-sm font-bold text-slate-700">Oct 24, 14:02</span>
+</div>
+</div>
+</div>
+<!-- Content Area -->
+<div class="space-y-3">
+<p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Full Message Content</p>
+<div class="p-4 bg-slate-50 rounded-xl border border-slate-100 text-slate-700 text-sm leading-relaxed font-medium">
+                    Alert: Perimeter breach detected at sector 4G. Immediate verification required. Internal security sensor S4G-902 triggered at 14:01:45. Motion captured on Cam-04. Please acknowledge this alert and dispatch secondary inspection team.
+                </div>
+</div>
+<!-- Attachments / Metadata -->
+<div class="space-y-3">
+<p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">System Metadata</p>
+<div class="space-y-2">
+<div class="flex justify-between items-center py-2 border-b border-slate-100">
+<span class="text-xs text-slate-500">Encrypted</span>
+<span class="text-xs font-bold text-green-600 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="lock" data-weight="fill">lock</span>
+                            AES-256
+                        </span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-slate-100">
+<span class="text-xs text-slate-500">Relay ID</span>
+<span class="text-xs font-bold text-slate-700">R-99-ALPHA</span>
+</div>
+<div class="flex justify-between items-center py-2">
+<span class="text-xs text-slate-500">Urgency</span>
+<span class="text-xs font-bold text-error">CRITICAL</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Footer -->
+<div class="p-6 border-t border-slate-200 bg-white space-y-3">
+<button class="w-full bg-primary text-white py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2 hover:bg-primary-container transition-colors shadow-lg shadow-primary/10">
+<span class="material-symbols-outlined text-xl" data-icon="reply">reply</span>
+                Reply to Sender
+            </button>
+<div class="grid grid-cols-2 gap-3">
+<button class="py-2.5 px-4 bg-slate-50 text-slate-700 text-[13px] font-bold rounded-lg border border-slate-200 flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="check_circle">check_circle</span>
+                    Mark Read
+                </button>
+<button class="py-2.5 px-4 bg-white text-error text-[13px] font-bold rounded-lg border border-error/20 flex items-center justify-center gap-2 hover:bg-error-container/10 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="flag">flag</span>
+                    Flag Message
+                </button>
+</div>
+</div>
+</div>
+</body></html>

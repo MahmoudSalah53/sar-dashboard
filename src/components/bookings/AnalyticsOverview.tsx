@@ -4,9 +4,11 @@ import {
   Globe,
   MessageCircleMore,
 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { 
   AreaChart, 
   Area, 
+  Line,
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -23,6 +25,8 @@ type TrendPoint = {
   label: string
   total: number
 }
+
+type TrendMetric = 'count' | 'revenue'
 
 function toNumber(value: unknown) {
   if (typeof value === 'number') return value
@@ -48,8 +52,7 @@ function getDateKey(value: unknown) {
   return `${year}-${month}-${day}`
 }
 
-function buildTrendBuckets(bookings: BookingRecord[]): TrendPoint[] {
-  const counts = new Map<string, number>()
+function buildDailyTrendBuckets(bookings: BookingRecord[], metric: TrendMetric): TrendPoint[] {
   const data: TrendPoint[] = []
 
   for (let offset = 6; offset >= 0; offset -= 1) {
@@ -58,7 +61,6 @@ function buildTrendBuckets(bookings: BookingRecord[]): TrendPoint[] {
     day.setDate(day.getDate() - offset)
     const label = day.toLocaleDateString(undefined, { weekday: 'short' })
     const key = getDateKey(day.toISOString())
-    counts.set(key, 0)
     data.push({ label, total: 0, key })
   }
 
@@ -67,25 +69,44 @@ function buildTrendBuckets(bookings: BookingRecord[]): TrendPoint[] {
     const key = getDateKey(rawDate)
     if (!key) return
     const index = data.findIndex((d) => d.key === key)
-    if (index !== -1) data[index].total += 1
+    if (index !== -1) {
+      if (metric === 'revenue') {
+        data[index].total += toNumber(getFieldValue(b, 'price') ?? getFieldValue(b, 'total_price'))
+      } else {
+        data[index].total += 1
+      }
+    }
   })
 
   return data
 }
 
 export function AnalyticsOverview({ bookings }: { bookings: BookingRecord[] }) {
+  const [trendMetric, setTrendMetric] = useState<TrendMetric>('count')
   const totalBookings = bookings.length
   const whatsappCount = bookings.filter((b) => getSource(b).includes('whatsapp')).length
   const webCount = bookings.filter((b) => getSource(b).includes('web')).length
   
-  const estimatedRevenue = bookings.reduce((sum, b) => sum + toNumber(getFieldValue(b, 'price')), 0)
-  const trendData = buildTrendBuckets(bookings)
+  const estimatedRevenue = bookings.reduce(
+    (sum, b) => sum + toNumber(getFieldValue(b, 'price') ?? getFieldValue(b, 'total_price')),
+    0,
+  )
+  const trendData = useMemo(
+    () => buildDailyTrendBuckets(bookings, trendMetric),
+    [bookings, trendMetric],
+  )
+  const nonZeroPoints = trendData.filter((item) => item.total > 0).length
+  const hasEnoughVariation = nonZeroPoints > 1
+  const topBucket = trendData.reduce<TrendPoint | null>((best, item) => {
+    if (!best) return item
+    return item.total > best.total ? item : best
+  }, null)
 
   return (
     <section className="space-y-5">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Bookings" value={totalBookings} icon={CalendarCheck2} accent="primary" />
-        <StatCard label="Revenue" value={`$${estimatedRevenue.toLocaleString()}`} icon={CircleDollarSign} accent="success" />
+        <StatCard label="Revenue" value={`${estimatedRevenue.toLocaleString()} SAR`} icon={CircleDollarSign} accent="success" />
         <StatCard label="Web" value={webCount} icon={Globe} accent="accent" />
         <StatCard label="WhatsApp" value={whatsappCount} icon={MessageCircleMore} accent="warning" />
       </div>
@@ -95,24 +116,59 @@ export function AnalyticsOverview({ bookings }: { bookings: BookingRecord[] }) {
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h3 className="text-base font-semibold text-[var(--color-text-primary)]">Activity Overview</h3>
-              <p className="text-sm text-[var(--color-text-muted)]">Daily booking performance</p>
+              <p className="text-sm text-[var(--color-text-muted)]">
+                {trendMetric === 'revenue'
+                  ? 'Total Revenue (last 7 days)'
+                  : 'Total Requests (last 7 days)'}
+              </p>
             </div>
-            <div className="flex items-center gap-1 rounded-full bg-[var(--color-accent-soft)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-accent)]">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-accent)] opacity-70"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--color-accent)]"></span>
-              </span>
-              LIVE DATA
+            <div className="inline-flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-1">
+              <button
+                type="button"
+                onClick={() => setTrendMetric('count')}
+                className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+                  trendMetric === 'count'
+                    ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
+                    : 'text-[var(--color-text-secondary)]'
+                }`}
+              >
+                Requests
+              </button>
+              <button
+                type="button"
+                onClick={() => setTrendMetric('revenue')}
+                className={`rounded-md px-3 py-1 text-xs font-semibold transition ${
+                  trendMetric === 'revenue'
+                    ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
+                    : 'text-[var(--color-text-secondary)]'
+                }`}
+              >
+                Revenue
+              </button>
             </div>
           </div>
+
+          {!hasEnoughVariation && topBucket ? (
+            <div className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
+              <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                Peak day: {topBucket.label}
+              </p>
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                {trendMetric === 'revenue'
+                  ? `Total: ${topBucket.total.toLocaleString()} SAR.`
+                  : `Total requests: ${topBucket.total.toLocaleString()}.`}{' '}
+                Add more daily data to show richer trend.
+              </p>
+            </div>
+          ) : null}
 
           <div className="h-[230px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData}>
                 <defs>
-                  <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
+                  <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0.04} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" opacity={0.5} />
@@ -123,8 +179,19 @@ export function AnalyticsOverview({ bookings }: { bookings: BookingRecord[] }) {
                   tick={{fill: 'var(--color-text-muted)', fontSize: 12}}
                   dy={10}
                 />
-                <YAxis hide />
+                <YAxis
+                  allowDecimals={false}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }}
+                />
                 <Tooltip
+                  formatter={(value: number | string) => [
+                    trendMetric === 'revenue'
+                      ? `${Number(value).toLocaleString()} SAR`
+                      : Number(value).toLocaleString(),
+                    trendMetric === 'revenue' ? 'Revenue' : 'Requests',
+                  ]}
                   contentStyle={{
                     borderRadius: '12px',
                     border: 'none',
@@ -136,9 +203,16 @@ export function AnalyticsOverview({ bookings }: { bookings: BookingRecord[] }) {
                   type="monotone"
                   dataKey="total"
                   stroke="var(--color-primary)"
-                  strokeWidth={4}
-                  fillOpacity={1}
-                  fill="url(#colorTotal)"
+                  strokeWidth={2.5}
+                  fill="url(#revenueFill)"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="total"
+                  stroke="var(--color-primary)"
+                  strokeWidth={2.5}
+                  dot={{ r: 4, fill: 'var(--color-primary)' }}
+                  activeDot={{ r: 6 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
