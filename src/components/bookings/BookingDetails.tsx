@@ -1,82 +1,21 @@
-import { CalendarClock, CircleDollarSign, CircleEllipsis, Globe, Layers, UserRound } from 'lucide-react'
-import type { ComponentType } from 'react'
+import { CalendarClock, CircleDollarSign, Contact, MessageCircleMore, Route, UsersRound } from 'lucide-react'
 
-import type { BookingRecord, BookingValue } from '../../types/bookings'
-import { findFieldKey, formatBookingValue, formatLabel, getFieldValue } from '../../lib/booking-fields'
+import type { BookingRecord } from '../../types/bookings'
+import { formatBookingValue, getFieldValue } from '../../lib/booking-fields'
 
 type BookingDetailsProps = {
   booking: BookingRecord
 }
 
-type DetailValueProps = {
-  label: string
-  value: BookingValue
-}
-
-type SnapshotItemProps = {
+type StatPillProps = {
   label: string
   value: string
-  icon: ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string }>
 }
 
-function DetailValue({ label, value }: DetailValueProps) {
-  if (Array.isArray(value)) {
-    return (
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)]/60 p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-          {label}
-        </p>
-        <div className="mt-3 space-y-2">
-          {value.length === 0 ? (
-            <span className="text-sm text-[var(--color-text-secondary)]">None</span>
-          ) : (
-            value.map((item, index) => (
-              <DetailValue
-                key={`${label}-${index}`}
-                label={`Item ${index + 1}`}
-                value={item}
-              />
-            ))
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  if (typeof value === 'object' && value !== null) {
-    return (
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)]/60 p-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-          {label}
-        </p>
-        <div className="mt-3 grid gap-2 border-l border-[var(--color-border)] pl-3">
-          {Object.entries(value).map(([nestedKey, nestedValue]) => (
-            <DetailValue
-              key={nestedKey}
-              label={formatLabel(nestedKey)}
-              value={nestedValue}
-            />
-          ))}
-        </div>
-      </div>
-    )
-  }
-
+function StatPill({ label, value, icon: Icon }: StatPillProps) {
   return (
-    <div className="grid grid-cols-1 items-start gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 sm:grid-cols-3 sm:gap-3">
-      <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
-        {label}
-      </dt>
-      <dd className="col-span-2 text-sm font-medium text-[var(--color-text-primary)]">
-        {formatBookingValue(value)}
-      </dd>
-    </div>
-  )
-}
-
-function SnapshotItem({ label, value, icon: Icon }: SnapshotItemProps) {
-  return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5 shadow-[var(--shadow-sm)]">
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-3.5 shadow-[var(--shadow-sm)]">
       <p className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
         <Icon className="h-3.5 w-3.5" />
         {label}
@@ -86,69 +25,178 @@ function SnapshotItem({ label, value, icon: Icon }: SnapshotItemProps) {
   )
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+}
+
+function asRecordArray(value: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((item) => asRecord(item) !== null) as Record<string, unknown>[]
+}
+
+function toNumber(value: unknown) {
+  if (typeof value === 'number') return value
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(/[^0-9.-]/g, ''))
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+  return 0
+}
+
 export function BookingDetails({ booking }: BookingDetailsProps) {
-  const nameValue = formatBookingValue(getFieldValue(booking, 'name'))
-  const serviceValue = formatBookingValue(getFieldValue(booking, 'service'))
-  const sourceValue = formatBookingValue(getFieldValue(booking, 'source'))
   const dateValue = formatBookingValue(getFieldValue(booking, 'date'))
-  const statusValue = formatBookingValue(getFieldValue(booking, 'status'))
-  const priceValue = formatBookingValue(getFieldValue(booking, 'price'))
-  const summaryKeys = new Set<string>(['id'])
+  const whatsappValue = formatBookingValue(getFieldValue(booking, 'whatsapp'))
+  const totalPrice = toNumber(getFieldValue(booking, 'total_price') ?? getFieldValue(booking, 'price'))
 
-  ;['name', 'service', 'source', 'date', 'status', 'price'].forEach((field) => {
-    const resolvedKey = findFieldKey(booking, field)
-    if (resolvedKey) {
-      summaryKeys.add(resolvedKey)
-    }
-  })
-
-  const payloadEntries = Object.entries(booking).filter(([key]) => !summaryKeys.has(key))
+  const trips = asRecordArray(getFieldValue(booking, 'trip'))
+  const passengers = asRecordArray(getFieldValue(booking, 'passengers'))
+  const contact = asRecord(getFieldValue(booking, 'contact'))
+  const extras = asRecord(getFieldValue(booking, 'extras'))
+  const payment = asRecord(getFieldValue(booking, 'payment'))
 
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-md)]">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-4">
           <div>
             <h3 className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
-              Booking Snapshot
+              Booking Details
             </h3>
             <p className="text-xs text-[var(--color-text-muted)]">
-              Quick overview before diving into full payload
+              Structured summary without duplicated payload data
             </p>
           </div>
-          <span className="rounded-full bg-[var(--color-primary-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--color-primary)]">
-            ID: {String(booking.id)}
-          </span>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <SnapshotItem label="Customer" value={nameValue} icon={UserRound} />
-          <SnapshotItem label="Service" value={serviceValue} icon={Layers} />
-          <SnapshotItem label="Source" value={sourceValue} icon={Globe} />
-          <SnapshotItem label="Booking Time" value={dateValue} icon={CalendarClock} />
-          <SnapshotItem label="Status" value={statusValue} icon={CircleEllipsis} />
-          <SnapshotItem label="Price" value={priceValue} icon={CircleDollarSign} />
+          <StatPill label="Date" value={dateValue} icon={CalendarClock} />
+          <StatPill label="Total Price" value={`${totalPrice.toLocaleString()} SAR`} icon={CircleDollarSign} />
+          <StatPill label="Passengers" value={String(passengers.length)} icon={UsersRound} />
+          <StatPill label="Trips" value={String(trips.length)} icon={Route} />
+          <StatPill label="WhatsApp" value={whatsappValue} icon={MessageCircleMore} />
         </div>
       </section>
 
-      {payloadEntries.length > 0 ? (
+      {trips.length > 0 ? (
         <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-md)]">
           <div className="mb-4 border-b border-[var(--color-border)] pb-3">
             <h3 className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
-              Complete Booking Payload
+              Trip Segments
             </h3>
             <p className="text-xs text-[var(--color-text-muted)]">
-              Additional fields from API response
+              From/To, departure, arrival and segment price
             </p>
           </div>
 
-          <dl className="grid gap-3">
-            {payloadEntries.map(([key, value]) => (
-              <DetailValue key={key} label={formatLabel(key)} value={value} />
-            ))}
-          </dl>
+          <div className="overflow-hidden rounded-xl border border-[var(--color-border)]">
+            <table className="w-full text-sm">
+              <thead className="bg-[var(--color-surface-soft)] text-[var(--color-text-secondary)]">
+                <tr>
+                  <th className="px-3 py-2 text-left font-semibold">Trip ID</th>
+                  <th className="px-3 py-2 text-left font-semibold">Route</th>
+                  <th className="px-3 py-2 text-left font-semibold">Time</th>
+                  <th className="px-3 py-2 text-left font-semibold">Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trips.map((trip) => (
+                  <tr key={String(trip.id ?? `${trip.from}-${trip.to}-${trip.dep}`)} className="border-t border-[var(--color-border)]">
+                    <td className="px-3 py-2">{formatBookingValue(trip.id as never)}</td>
+                    <td className="px-3 py-2">
+                      {formatBookingValue(trip.from as never)} {'->'} {formatBookingValue(trip.to as never)}
+                    </td>
+                    <td className="px-3 py-2">
+                      {formatBookingValue(trip.dep as never)} - {formatBookingValue(trip.arr as never)}
+                    </td>
+                    <td className="px-3 py-2">{toNumber(trip.price).toLocaleString()} SAR</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       ) : null}
+
+      {passengers.length > 0 ? (
+        <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-md)]">
+          <div className="mb-4 border-b border-[var(--color-border)] pb-3">
+            <h3 className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
+              Passengers
+            </h3>
+          </div>
+
+          <div className="space-y-2">
+            {passengers.map((passenger, index) => (
+              <div
+                key={`${String(passenger.id_number ?? index)}`}
+                className="flex items-center justify-between rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-soft)] px-3 py-2"
+              >
+                <span className="font-medium text-[var(--color-text-primary)]">
+                  {formatBookingValue(passenger.name as never)}
+                </span>
+                <span className="text-xs text-[var(--color-text-secondary)]">
+                  ID: {formatBookingValue(passenger.id_number as never)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="grid gap-4 lg:grid-cols-3">
+        <InfoCard
+          title="Contact"
+          icon={<Contact className="h-4 w-4" />}
+          fields={[
+            { label: 'Email', value: formatBookingValue(contact?.email as never) },
+            { label: 'Phone', value: formatBookingValue(contact?.phone as never) },
+          ]}
+        />
+        <InfoCard
+          title="Extras"
+          icon={<Route className="h-4 w-4" />}
+          fields={[
+            { label: 'Meal', value: formatBookingValue(extras?.meal as never) },
+            { label: 'Seat Class', value: formatBookingValue(extras?.seat_class as never) },
+          ]}
+        />
+        <InfoCard
+          title="Payment"
+          icon={<CircleDollarSign className="h-4 w-4" />}
+          fields={[
+            { label: 'Holder', value: formatBookingValue(payment?.holder as never) },
+            { label: 'Card', value: formatBookingValue(payment?.masked_card as never) },
+            { label: 'Expiry', value: formatBookingValue(payment?.expiry as never) },
+          ]}
+        />
+      </section>
     </div>
+  )
+}
+
+type InfoCardProps = {
+  title: string
+  icon: React.ReactNode
+  fields: Array<{ label: string; value: string }>
+}
+
+function InfoCard({ title, icon, fields }: InfoCardProps) {
+  return (
+    <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-sm)]">
+      <h4 className="mb-3 inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
+        {icon}
+        {title}
+      </h4>
+      <div className="space-y-2">
+        {fields.map((field) => (
+          <div key={field.label} className="flex items-center justify-between gap-3 text-sm">
+            <span className="text-[var(--color-text-secondary)]">{field.label}</span>
+            <span className="text-right font-medium text-[var(--color-text-primary)]">{field.value}</span>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }
