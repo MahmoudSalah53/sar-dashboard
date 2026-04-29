@@ -26,16 +26,39 @@ type ApiBooking = {
   [key: string]: unknown
 }
 
+function extractBookingArray(payload: unknown): ApiBooking[] {
+  if (Array.isArray(payload)) return payload as ApiBooking[]
+
+  if (typeof payload === 'string') {
+    try {
+      const parsed = JSON.parse(payload) as unknown
+      if (Array.isArray(parsed)) return parsed as ApiBooking[]
+    } catch {
+      // noop
+    }
+  }
+
+  if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>
+    const candidates = [record.data, record.results, record.bookings, record.items]
+    const arrayCandidate = candidates.find((candidate) => Array.isArray(candidate))
+    if (Array.isArray(arrayCandidate)) return arrayCandidate as ApiBooking[]
+  }
+
+  return []
+}
+
 export async function getBookings(): Promise<BookingRecord[]> {
   if (import.meta.env.DEV && !configuredApiBase) {
     throw new Error('VITE_API_BASE_URL is required in development')
   }
 
-  const response = await api.get<ApiBooking[]>('/bookings')
-  if (!Array.isArray(response.data)) {
-    throw new Error('Invalid API response for /bookings (expected array)')
+  const response = await api.get<unknown>('/bookings')
+  const bookingList = extractBookingArray(response.data)
+  if (bookingList.length === 0) {
+    throw new Error('Invalid API response for /bookings (expected bookings array)')
   }
-  return response.data.map(normalizeApiBooking)
+  return bookingList.map(normalizeApiBooking)
 }
 
 export async function getBookingById(bookingId: string): Promise<BookingRecord> {

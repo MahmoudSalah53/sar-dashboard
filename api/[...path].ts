@@ -43,6 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(upstream.status)
     res.setHeader('Content-Type', contentType)
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
     res.send(bodyText)
   } catch (error) {
     res.status(502).json({
