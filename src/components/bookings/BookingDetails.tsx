@@ -45,6 +45,32 @@ function toNumber(value: unknown) {
   return 0
 }
 
+function formatStructuredDetail(value: unknown): string {
+  if (value === null || value === undefined || value === '') return 'Not provided'
+  if (typeof value !== 'object' || Array.isArray(value)) return formatBookingValue(value as never)
+
+  const record = value as Record<string, unknown>
+  const name = typeof record.name === 'string' ? record.name : undefined
+  const pricePerPassenger = toNumber(record.price_per_passenger)
+  const priceAdjustment = toNumber(record.price_adjustment)
+
+  if (name && pricePerPassenger > 0) {
+    return name
+  }
+
+  if (name && priceAdjustment !== 0) {
+    return name
+  }
+
+  if (name) return name
+
+  const compact = Object.entries(record)
+    .map(([key, raw]) => `${key}: ${formatBookingValue(raw as never)}`)
+    .join(' | ')
+
+  return compact || 'Not provided'
+}
+
 export function BookingDetails({ booking }: BookingDetailsProps) {
   const dateValue = formatBookingValue(getFieldValue(booking, 'date'))
   const whatsappValue = formatBookingValue(getFieldValue(booking, 'whatsapp'))
@@ -158,8 +184,8 @@ export function BookingDetails({ booking }: BookingDetailsProps) {
           title="Extras"
           icon={<Route className="h-4 w-4" />}
           fields={[
-            { label: 'Meal', value: formatBookingValue(extras?.meal as never) },
-            { label: 'Seat Class', value: formatBookingValue(extras?.seat_class as never) },
+            { label: 'Meal', value: formatStructuredDetail(extras?.meal) },
+            { label: 'Seat Class', value: formatStructuredDetail(extras?.seat_class) },
           ]}
         />
         <InfoCard
@@ -168,7 +194,6 @@ export function BookingDetails({ booking }: BookingDetailsProps) {
           fields={[
             { label: 'Holder', value: formatBookingValue(payment?.holder as never) },
             { label: 'Card', value: formatBookingValue(payment?.masked_card as never) },
-            { label: 'Expiry', value: formatBookingValue(payment?.expiry as never) },
           ]}
         />
       </section>

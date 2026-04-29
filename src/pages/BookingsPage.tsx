@@ -1,13 +1,18 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
 
 import { AppShell } from '../components/AppShell'
-import { AnalyticsOverview } from '../components/bookings/AnalyticsOverview'
 import { BookingsCards } from '../components/bookings/BookingsCards'
 import { BookingsTable } from '../components/bookings/BookingsTable'
 import { BookingListSkeleton, EmptyState, ErrorState } from '../components/bookings/StateViews'
 import { Button } from '../components/ui/button'
 import { useBookings } from '../hooks/useBookings'
+
+const AnalyticsOverview = lazy(() =>
+  import('../components/bookings/AnalyticsOverview').then((module) => ({
+    default: module.AnalyticsOverview,
+  })),
+)
 
 function getVisiblePages(current: number, total: number) {
   if (total <= 5) {
@@ -27,24 +32,33 @@ function getVisiblePages(current: number, total: number) {
 
 export function BookingsPage() {
   const PAGE_SIZE = 8
-  const { data: bookings = [], error, isError, isFetching, isLoading, refetch } = useBookings()
+  const { data: bookings = [], dataUpdatedAt, error, isError, isFetching, isLoading, refetch } =
+    useBookings()
   const [currentPage, setCurrentPage] = useState(1)
   const totalPages = Math.max(1, Math.ceil(bookings.length / PAGE_SIZE))
   const safeCurrentPage = Math.min(currentPage, totalPages)
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
 
   const paginatedBookings = useMemo(() => {
     const startIndex = (safeCurrentPage - 1) * PAGE_SIZE
     return bookings.slice(startIndex, startIndex + PAGE_SIZE)
   }, [bookings, safeCurrentPage])
 
-  const startItem = bookings.length === 0 ? 0 : (safeCurrentPage - 1) * PAGE_SIZE + 1
-  const endItem = Math.min(safeCurrentPage * PAGE_SIZE, bookings.length)
   const visiblePages = getVisiblePages(safeCurrentPage, totalPages)
 
-  const updatedAt = new Date().toLocaleTimeString(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const updatedAt =
+    dataUpdatedAt > 0
+      ? new Date(dataUpdatedAt).toLocaleTimeString(undefined, {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        })
+      : '--:--:--'
 
   return (
     <AppShell>
@@ -58,10 +72,10 @@ export function BookingsPage() {
             <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text-primary)] sm:text-3xl">
               Bookings overview
             </h1>
-            <p className="max-w-2xl text-sm text-[var(--color-text-secondary)]">
+            {/* <p className="max-w-2xl text-sm text-[var(--color-text-secondary)]">
               Track performance across channels and dive into individual bookings — all rendered
               flexibly from a changing API.
-            </p>
+            </p> */}
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden text-xs text-[var(--color-text-muted)] sm:inline">
@@ -81,7 +95,9 @@ export function BookingsPage() {
         </header>
 
         {!isLoading && !isError && bookings.length > 0 ? (
-          <AnalyticsOverview bookings={bookings} />
+          <Suspense fallback={<BookingListSkeleton />}>
+            <AnalyticsOverview bookings={bookings} />
+          </Suspense>
         ) : null}
 
         <section className="space-y-4">
@@ -90,15 +106,15 @@ export function BookingsPage() {
               <h2 className="text-base font-semibold tracking-tight text-[var(--color-text-primary)]">
                 Recent bookings
               </h2>
-              <p className="text-xs text-[var(--color-text-muted)]">
+              {/* <p className="text-xs text-[var(--color-text-muted)]">
                 Click any row to inspect the full booking data
-              </p>
+              </p> */}
             </div>
-            {bookings.length > 0 ? (
+            {/* {bookings.length > 0 ? (
               <span className="rounded-full bg-[var(--color-surface)] px-2.5 py-1 text-xs font-medium text-[var(--color-text-secondary)] ring-1 ring-[var(--color-border)]">
                 {startItem}-{endItem} of {bookings.length}
               </span>
-            ) : null}
+            ) : null} */}
           </div>
 
           {isLoading ? <BookingListSkeleton /> : null}
@@ -114,66 +130,71 @@ export function BookingsPage() {
               <BookingsTable bookings={paginatedBookings} />
               <BookingsCards bookings={paginatedBookings} />
 
-              <div className="flex flex-wrap items-center justify-center gap-2 rounded-xl p-2">
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCurrentPage((page) => Math.max(1, Math.min(page, totalPages) - 1))
-                    }
-                    disabled={safeCurrentPage === 1}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-primary)]/40 hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-45"
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
+              <div
+                aria-label="Pagination"
+                className="overflow-x-auto rounded-xl p-2"
+              >
+                <div className="flex min-w-max items-center justify-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCurrentPage((page) => Math.max(1, Math.min(page, totalPages) - 1))
+                      }
+                      disabled={safeCurrentPage === 1}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-primary)]/40 hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-45"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
 
-                  {visiblePages[0] > 1 ? (
-                    <>
+                    {visiblePages[0] > 1 ? (
+                      <>
+                        <PageButton
+                          page={1}
+                          isActive={safeCurrentPage === 1}
+                          onSelect={setCurrentPage}
+                        />
+                        {visiblePages[0] > 2 ? (
+                          <span className="px-1 text-xs text-[var(--color-text-muted)]">...</span>
+                        ) : null}
+                      </>
+                    ) : null}
+
+                    {visiblePages.map((page) => (
                       <PageButton
-                        page={1}
-                        isActive={safeCurrentPage === 1}
+                        key={page}
+                        page={page}
+                        isActive={safeCurrentPage === page}
                         onSelect={setCurrentPage}
                       />
-                      {visiblePages[0] > 2 ? (
-                        <span className="px-1 text-xs text-[var(--color-text-muted)]">...</span>
-                      ) : null}
-                    </>
-                  ) : null}
+                    ))}
 
-                  {visiblePages.map((page) => (
-                    <PageButton
-                      key={page}
-                      page={page}
-                      isActive={safeCurrentPage === page}
-                      onSelect={setCurrentPage}
-                    />
-                  ))}
+                    {visiblePages[visiblePages.length - 1] < totalPages ? (
+                      <>
+                        {visiblePages[visiblePages.length - 1] < totalPages - 1 ? (
+                          <span className="px-1 text-xs text-[var(--color-text-muted)]">...</span>
+                        ) : null}
+                        <PageButton
+                          page={totalPages}
+                          isActive={safeCurrentPage === totalPages}
+                          onSelect={setCurrentPage}
+                        />
+                      </>
+                    ) : null}
 
-                  {visiblePages[visiblePages.length - 1] < totalPages ? (
-                    <>
-                      {visiblePages[visiblePages.length - 1] < totalPages - 1 ? (
-                        <span className="px-1 text-xs text-[var(--color-text-muted)]">...</span>
-                      ) : null}
-                      <PageButton
-                        page={totalPages}
-                        isActive={safeCurrentPage === totalPages}
-                        onSelect={setCurrentPage}
-                      />
-                    </>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCurrentPage((page) => Math.min(totalPages, Math.min(page, totalPages) + 1))
-                    }
-                    disabled={safeCurrentPage === totalPages}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-primary)]/40 hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-45"
-                    aria-label="Next page"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCurrentPage((page) => Math.min(totalPages, Math.min(page, totalPages) + 1))
+                      }
+                      disabled={safeCurrentPage === totalPages}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-soft)] text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-primary)]/40 hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-45"
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </>

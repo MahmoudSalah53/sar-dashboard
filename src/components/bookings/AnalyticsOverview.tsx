@@ -53,32 +53,38 @@ function getDateKey(value: unknown) {
 }
 
 function buildDailyTrendBuckets(bookings: BookingRecord[], metric: TrendMetric): TrendPoint[] {
-  const data: TrendPoint[] = []
-
-  for (let offset = 6; offset >= 0; offset -= 1) {
-    const day = new Date()
-    day.setHours(0, 0, 0, 0)
-    day.setDate(day.getDate() - offset)
-    const label = day.toLocaleDateString(undefined, { weekday: 'short' })
-    const key = getDateKey(day.toISOString())
-    data.push({ label, total: 0, key })
-  }
+  const grouped = new Map<string, number>()
 
   bookings.forEach((b) => {
     const rawDate = getFieldValue(b, 'date')
     const key = getDateKey(rawDate)
     if (!key) return
-    const index = data.findIndex((d) => d.key === key)
-    if (index !== -1) {
-      if (metric === 'revenue') {
-        data[index].total += toNumber(getFieldValue(b, 'price') ?? getFieldValue(b, 'total_price'))
-      } else {
-        data[index].total += 1
-      }
-    }
+    const value =
+      metric === 'revenue'
+        ? toNumber(getFieldValue(b, 'price') ?? getFieldValue(b, 'total_price'))
+        : 1
+    grouped.set(key, (grouped.get(key) ?? 0) + value)
   })
 
-  return data
+  const sortedEntries = Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+  if (sortedEntries.length === 0) return []
+
+  const latestDate = new Date(`${sortedEntries[sortedEntries.length - 1][0]}T00:00:00`)
+  const windowDays = 7
+  const paddedData: TrendPoint[] = []
+
+  for (let offset = windowDays - 1; offset >= 0; offset -= 1) {
+    const day = new Date(latestDate)
+    day.setDate(latestDate.getDate() - offset)
+    const key = getDateKey(day.toISOString())
+    paddedData.push({
+      key,
+      label: key,
+      total: grouped.get(key) ?? 0,
+    })
+  }
+
+  return paddedData
 }
 
 export function AnalyticsOverview({ bookings }: { bookings: BookingRecord[] }) {
@@ -95,12 +101,6 @@ export function AnalyticsOverview({ bookings }: { bookings: BookingRecord[] }) {
     () => buildDailyTrendBuckets(bookings, trendMetric),
     [bookings, trendMetric],
   )
-  const nonZeroPoints = trendData.filter((item) => item.total > 0).length
-  const hasEnoughVariation = nonZeroPoints > 1
-  const topBucket = trendData.reduce<TrendPoint | null>((best, item) => {
-    if (!best) return item
-    return item.total > best.total ? item : best
-  }, null)
 
   return (
     <section className="space-y-5">
@@ -118,8 +118,8 @@ export function AnalyticsOverview({ bookings }: { bookings: BookingRecord[] }) {
               <h3 className="text-base font-semibold text-[var(--color-text-primary)]">Activity Overview</h3>
               <p className="text-sm text-[var(--color-text-muted)]">
                 {trendMetric === 'revenue'
-                  ? 'Total Revenue (last 7 days)'
-                  : 'Total Requests (last 7 days)'}
+                  ? 'Total Revenue by Booking Date'
+                  : 'Total Requests by Booking Date'}
               </p>
             </div>
             <div className="inline-flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-1">
@@ -148,7 +148,7 @@ export function AnalyticsOverview({ bookings }: { bookings: BookingRecord[] }) {
             </div>
           </div>
 
-          {!hasEnoughVariation && topBucket ? (
+          {/* {!hasEnoughVariation && topBucket ? (
             <div className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
               <p className="text-sm font-semibold text-[var(--color-text-primary)]">
                 Peak day: {topBucket.label}
@@ -160,7 +160,7 @@ export function AnalyticsOverview({ bookings }: { bookings: BookingRecord[] }) {
                 Add more daily data to show richer trend.
               </p>
             </div>
-          ) : null}
+          ) : null} */}
 
           <div className="h-[230px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -186,10 +186,10 @@ export function AnalyticsOverview({ bookings }: { bookings: BookingRecord[] }) {
                   tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }}
                 />
                 <Tooltip
-                  formatter={(value: number | string) => [
+                  formatter={(value) => [
                     trendMetric === 'revenue'
-                      ? `${Number(value).toLocaleString()} SAR`
-                      : Number(value).toLocaleString(),
+                      ? `${Number(value ?? 0).toLocaleString()} SAR`
+                      : Number(value ?? 0).toLocaleString(),
                     trendMetric === 'revenue' ? 'Revenue' : 'Requests',
                   ]}
                   contentStyle={{
@@ -226,7 +226,7 @@ export function AnalyticsOverview({ bookings }: { bookings: BookingRecord[] }) {
             </h3>
             <div className="space-y-7">
               <SourceItem label="WhatsApp" count={whatsappCount} total={totalBookings} color="bg-[var(--color-accent)]" />
-              <SourceItem label="Direct Web" count={webCount} total={totalBookings} color="bg-[var(--color-primary)]" />
+              <SourceItem label="Web" count={webCount} total={totalBookings} color="bg-[var(--color-primary)]" />
             </div>
           </div>
         </div>

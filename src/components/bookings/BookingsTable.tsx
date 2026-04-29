@@ -5,6 +5,7 @@ import {
   type CellContext,
   type ColumnDef,
 } from '@tanstack/react-table'
+import { memo, useMemo } from 'react'
 import { ArrowUpRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
@@ -54,8 +55,8 @@ function formatSarPrice(value: BookingValue) {
   return formatBookingValue(value)
 }
 
-export function BookingsTable({ bookings }: BookingsTableProps) {
-  const columns: ColumnDef<BookingRecord>[] = [
+export const BookingsTable = memo(function BookingsTable({ bookings }: BookingsTableProps) {
+  const columns = useMemo<ColumnDef<BookingRecord>[]>(() => [
     {
       id: 'index',
       header: '#',
@@ -135,7 +136,7 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
         </div>
       ),
     },
-  ]
+  ], [])
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -174,4 +175,6 @@ export function BookingsTable({ bookings }: BookingsTableProps) {
       </Table>
     </div>
   )
-}
+})
+
+BookingsTable.displayName = 'BookingsTable'

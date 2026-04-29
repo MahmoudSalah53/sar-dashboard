@@ -27,5 +27,24 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      rolldownOptions: {
+        output: {
+          manualChunks: (moduleId: string) => {
+            if (moduleId.includes('node_modules/recharts')) return 'recharts'
+            if (moduleId.includes('node_modules/@tanstack/react-query')) return 'query'
+            if (moduleId.includes('node_modules/@tanstack/react-table')) return 'table'
+            if (
+              moduleId.includes('node_modules/react/') ||
+              moduleId.includes('node_modules/react-dom/') ||
+              moduleId.includes('node_modules/react-router-dom/')
+            ) {
+              return 'react'
+            }
+            return undefined
+          },
+        },
+      },
+    },
   }
 })
