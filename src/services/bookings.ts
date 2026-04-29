@@ -8,6 +8,10 @@ const runtimeBaseURL = import.meta.env.DEV ? '/api' : configuredApiBase
 const api = axios.create({
   baseURL: runtimeBaseURL,
   timeout: 10_000,
+  headers: {
+    // Bypass ngrok browser interstitial for API calls.
+    'ngrok-skip-browser-warning': 'true',
+  },
 })
 
 type ApiBooking = {
@@ -28,6 +32,9 @@ export async function getBookings(): Promise<BookingRecord[]> {
   }
 
   const response = await api.get<ApiBooking[]>('/bookings')
+  if (!Array.isArray(response.data)) {
+    throw new Error('Invalid API response for /bookings (expected array)')
+  }
   return response.data.map(normalizeApiBooking)
 }
 
@@ -37,6 +44,9 @@ export async function getBookingById(bookingId: string): Promise<BookingRecord> 
   }
 
   const response = await api.get<ApiBooking>(`/bookings/${bookingId}`)
+  if (!response.data || Array.isArray(response.data) || typeof response.data !== 'object') {
+    throw new Error(`Invalid API response for /bookings/${bookingId}`)
+  }
   return normalizeApiBooking(response.data)
 }
 
