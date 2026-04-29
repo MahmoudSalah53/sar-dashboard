@@ -56,9 +56,8 @@ export function BookingsPage() {
       ? new Date(dataUpdatedAt).toLocaleTimeString(undefined, {
           hour: '2-digit',
           minute: '2-digit',
-          second: '2-digit',
         })
-      : '--:--:--'
+      : '--:--'
 
   return (
     <AppShell>
