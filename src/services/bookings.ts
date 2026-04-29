@@ -3,7 +3,7 @@ import axios from 'axios'
 import type { BookingRecord } from '../types/bookings'
 
 const configuredApiBase = import.meta.env.VITE_API_BASE_URL ?? ''
-const runtimeBaseURL = import.meta.env.DEV ? '/api' : configuredApiBase
+const runtimeBaseURL = import.meta.env.DEV ? '/api' : '/api'
 
 const api = axios.create({
   baseURL: runtimeBaseURL,
@@ -27,8 +27,8 @@ type ApiBooking = {
 }
 
 export async function getBookings(): Promise<BookingRecord[]> {
-  if (!configuredApiBase) {
-    throw new Error('VITE_API_BASE_URL is required for WhatsApp bookings API')
+  if (import.meta.env.DEV && !configuredApiBase) {
+    throw new Error('VITE_API_BASE_URL is required in development')
   }
 
   const response = await api.get<ApiBooking[]>('/bookings')
@@ -39,8 +39,8 @@ export async function getBookings(): Promise<BookingRecord[]> {
 }
 
 export async function getBookingById(bookingId: string): Promise<BookingRecord> {
-  if (!configuredApiBase) {
-    throw new Error('VITE_API_BASE_URL is required for WhatsApp bookings API')
+  if (import.meta.env.DEV && !configuredApiBase) {
+    throw new Error('VITE_API_BASE_URL is required in development')
   }
 
   const response = await api.get<ApiBooking>(`/bookings/${bookingId}`)
