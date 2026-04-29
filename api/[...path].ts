@@ -41,9 +41,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const contentType = upstream.headers.get('content-type') ?? 'application/json'
     const bodyText = await upstream.text()
 
+    if (contentType.includes('text/html')) {
+      res.status(502).json({
+        error: 'Upstream returned HTML instead of JSON',
+        hint: 'Check that API_BASE_URL is correct and ngrok-skip-browser-warning is respected.',
+        status: upstream.status,
+        upstream: targetUrl,
+      })
+      return
+    }
+
     res.status(upstream.status)
-    res.setHeader('Content-Type', contentType)
+    res.setHeader('Content-Type', 'application/json')
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+    res.setHeader('Pragma', 'no-cache')
+    res.setHeader('Expires', '0')
     res.send(bodyText)
   } catch (error) {
     res.status(502).json({
